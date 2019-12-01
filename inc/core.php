@@ -19,33 +19,35 @@ function _find_next_in_array(array $a, int $i = 10) {
 	return $i;
 }
 
-function add_style(string $src = '', int $priority = 10, string $media = 'all', bool $is_file = false ) {
+function add_style(string $id, string $src, int $priority = 10, string $media = 'all', bool $is_file = false ) {
 	global $app_styles;
 
 	if (!isset($app_styles)) $app_styles = array();
 
 	$priority = _find_next_in_array($app_styles, $priority);
 	$app_styles[$priority] = [($is_file ? 'f' : 's') => $src, 'm' => $media];
+	if (!empty($id)) $app_styles[$priority]['i'] = $id;
 	return $priority;
 }
 
-function add_style_sheet(string $src = '', int $priority = 10, string $media = 'all' ) {
-	return add_style($src, $priority, $media, true );
+function add_style_sheet(string $id, string $src, int $priority = 10, string $media = 'all' ) {
+	return add_style($id, $src, $priority, $media, true );
 }
 
 
-function add_script(string $src = '', int $priority = 10, bool $in_footer = true, bool $is_file = false) {
+function add_script(string $id, string $src, int $priority = 10, bool $in_footer = true, bool $is_file = false) {
 	global $app_scripts;
 
 	if (!isset($app_scripts)) $app_scripts = array();
 
 	$priority = _find_next_in_array($app_scripts, $priority);
 	$app_scripts[$priority] = [($is_file ? 'f' : 's') => $src, 'b' => filter_var($in_footer, FILTER_VALIDATE_BOOLEAN)];
+	if (!empty($id)) $app_scripts[$priority]['i'] = $id;
 	return $priority;
 }
 
-function add_script_file(string $src = '', int $priority = 10, bool $in_footer = true) {
-	return add_script($src, $priority, $in_footer, true);
+function add_script_file(string $id, string $src, int $priority = 10, bool $in_footer = true) {
+	return add_script($id, $src, $priority, $in_footer, true);
 }
 
 function do_action(string $tag) {
@@ -98,23 +100,48 @@ function remove_filter(string $tag, callable $function_to_remove, int $priority 
 	todo(__FUNCTION__, __LINE__, __FILE__);
 }
 
+function _app_default_scripts($app_scripts, bool $is_bottom = false) {
+	foreach ($app_scripts as $value) {
+		if ((isset($value['b']) && $value['b']) != $is_bottom) continue;
+
+		echo "<script";
+		if (isset($value['i'])) { echo " id=\"" . $value['i'] . "\""; }
+		echo " type=\"text/javascript\"";
+
+		if (isset($value['s'])) {
+			echo ">\n";
+			echo $value['s'];
+			echo "\n";
+		} elseif (isset($value['f'])) {
+			echo " src=\"" . $value['f'] . "\">";
+		}
+		echo "</script>\n";
+	}
+}
+
 function app_default_header() {
 	global $app_styles, $app_scripts;
 
 	if (isset($app_styles) && is_array($app_styles)) {
 		foreach ($app_styles as $value) {
-			if (isset($value['s'])) {
-				echo "<style type=\"text/css\"";
-				if (isset($value['m'])) { echo " media=\"" . $value['m'] . "\""; }
-				echo ">\n";
-				echo $value['s'];
-				echo "\n</style>\n";
-			} elseif (isset($value['f'])) {
-				echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"" . $value['f'] . "\"";
-				if (isset($value['m'])) { echo " media=\"" . $value['m'] . "\""; }
-				echo ">\n";
-			}
+			if (isset($value['s'])) { $sty = true; }
+			elseif (isset($value['f'])) { $sty = false; }
+			else continue;
+
+			echo $sty ? "<style" : "<link";
+			if (isset($value['i'])) { echo " id=\"" . $value['i'] . "\""; }
+			echo " type=\"text/css\"";
+			if (!$sty) echo " rel=\"stylesheet\" href=\"" . $value['f'] . "\"";
+			if (isset($value['m'])) { echo " media=\"" . $value['m'] . "\""; }
+			if (isset($value['d']) && is_array($value['d']))
+				foreach ($value['d'] as $k => $v) echo " data-{$k}=\"$v\"";
+			echo ">\n";
+			if ($sty) echo $value['s'] . "\n</style>\n";
 		}
+	}
+
+	if (isset($app_scripts) && is_array($app_scripts)) {
+		_app_default_scripts($app_scripts, false);
 	}
 }
 add_action('header', 'app_default_header');
@@ -123,20 +150,7 @@ function app_default_footer() {
 	global $app_scripts;
 
 	if (isset($app_scripts) && is_array($app_scripts)) {
-		foreach ($app_scripts as $value) {
-			if (!isset($value['b']) || !$value['b']) continue;
-
-			echo "<script type=\"text/javascript\"";
-
-			if (isset($value['s'])) {
-				echo ">\n";
-				echo $value['s'];
-				echo "\n";
-			} elseif (isset($value['f'])) {
-				echo " src=\"" . $value['f'] . "\">";
-			}
-			echo "</script>\n";
-		}
+		_app_default_scripts($app_scripts, true);
 	}
 }
 add_action('footer', 'app_default_footer');
