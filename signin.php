@@ -3,10 +3,7 @@
 include_once 'config.php';
 include_once 'inc/core.php';
 
-include 'themes/' . APP_THEME . '/top.php';
-?>
-
-<style>
+add_style('signin', "
 	html {
 		height: 100%;
 	}
@@ -41,7 +38,10 @@ include 'themes/' . APP_THEME . '/top.php';
 	.login-ext { display: table; height: 100%; margin: 0 auto; }
 	.login-int { display: table-cell; vertical-align: middle; }
 	.login-box { width:24rem; }
-</style>
+");
+
+include 'themes/' . APP_THEME . '/top.php';
+?>
 
 <div class="login-backdrop"></div>
 <div class="login-ext">
@@ -89,23 +89,24 @@ include 'themes/' . APP_THEME . '/top.php';
 
 
 <?php
-include 'themes/' . APP_THEME . '/bottom.php';
-?>
 
-<script type="text/javascript">
+add_script('signin', "
 	$(document).ready(function() {
 		$('#pwd-visibility').removeClass('d-none');
-		$("#pwd-show").on('click', function(event) {
+		$('#pwd-show').on('click', function(event) {
 			event.preventDefault();
 			$('#password').attr('type', 'text');
 			$('#pwd-show').addClass('d-none');
 			$('#pwd-hide').removeClass('d-none');
 		});
-		$("#pwd-hide").on('click', function(event) {
+		$('#pwd-hide').on('click', function(event) {
 			event.preventDefault();
 			$('#password').attr('type', 'password');
 			$('#pwd-hide').addClass('d-none');
 			$('#pwd-show').removeClass('d-none');
 		});
 	});
-</script>
+");
+
+include 'themes/' . APP_THEME . '/bottom.php';
+?>
